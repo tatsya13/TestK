@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Куратор — Управление в образовании</title>
+    <link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.0/index.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary-blue: #0078D4;
+            --primary-dark: #005A9E;
+            --secondary-blue: #E3F2FD;
+            --accent-green: #10B981;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+            --text-light: #9CA3AF;
+            --bg-white: #FFFFFF;
+            --bg-gray: #F9FAFB;
+            --border-color: #E5E7EB;
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 740px;
+            height: 92vh;
+            max-height: 840px;
+            background: var(--bg-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .bot-avatar {
+            width: 46px; height: 46px;
+            background: white; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header-info h1 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+        .header-info p { font-size: 11.5px; opacity: 0.9; display: flex; align-items: center; gap: 4px; }
+        .status-dot { width: 7px; height: 7px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 20px;
+            background: var(--bg-white); scroll-behavior: smooth;
+        }
+        .chat-messages::-webkit-scrollbar { width: 5px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+        .message { display: flex; gap: 10px; margin-bottom: 16px; animation: messageIn 0.3s ease-out; }
+        @keyframes messageIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { flex-direction: row-reverse; }
+        .message-avatar {
+            width: 34px; height: 34px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+        }
+        .message.bot .message-avatar { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: white; }
+        .message.user .message-avatar { background: #8B5CF6; color: white; }
+        .message-content {
+            max-width: 78%; padding: 12px 16px;
+            border-radius: 14px; line-height: 1.55; font-size: 13.5px;
+        }
+        .message.bot .message-content { background: var(--secondary-blue); color: var(--text-primary); border-bottom-left-radius: 4px; }
+        .message.user .message-content { background: var(--primary-blue); color: white; border-bottom-right-radius: 4px; }
+        .message-time { font-size: 10px; color: var(--text-light); margin-top: 4px; }
+        .message.user .message-time { text-align: right; }
+        .message-content a { color: var(--primary-dark); text-decoration: underline; word-break: break-all; }
+        .message.user .message-content a { color: #dbeafe; }
+        .message-content strong { font-weight: 600; }
+        .welcome-screen { text-align: center; padding: 36px 24px; }
+        .welcome-icon { font-size: 58px; margin-bottom: 16px; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .welcome-title { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+        .welcome-profile {
+            font-size: 13px; color: var(--primary-blue); font-weight: 500; margin-bottom: 8px;
+            background: var(--secondary-blue); display: inline-block; padding: 4px 12px; border-radius: 20px;
+        }
+        .welcome-subtitle { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto; }
+        .course-selector { margin-top: 20px; display: flex; gap: 10px; justify-content: center; }
+        .course-btn {
+            padding: 10px 28px; background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: transform 0.2s; font-family: inherit;
+        }
+        .course-btn:hover { transform: scale(1.05); }
+        .typing-indicator {
+            display: flex; gap: 4px; padding: 12px 16px;
+            background: var(--secondary-blue); border-radius: 14px;
+            border-bottom-left-radius: 4px; width: fit-content;
+        }
+        .typing-dot { width: 7px; height: 7px; background: var(--primary-blue); border-radius: 50%; animation: typing 1.4s infinite; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 100% { transform: translateY(0); opacity: 0.4; } 50% { transform: translateY(-5px); opacity: 1; } }
+        .chat-input-area { background: var(--bg-white); border-top: 1px solid var(--border-color); padding: 14px 20px; }
+        .input-wrapper { display: flex; gap: 10px; align-items: flex-end; }
+        .input-container { flex: 1; position: relative; }
+        .chat-input {
+            width: 100%; padding: 12px 16px; border: 2px solid var(--border-color); border-radius: 22px;
+            font-size: 14px; font-family: inherit; resize: none; max-height: 100px; transition: border-color 0.2s;
+        }
+        .chat-input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(0,120,212,0.1); }
+        .chat-input::placeholder { color: var(--text-light); }
+        .send-btn {
+            width: 44px; height: 44px; border: none; border-radius: 50%;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white; font-size: 18px; cursor: pointer; transition: transform 0.2s; flex-shrink: 0;
+        }
+        .send-btn:hover:not(:disabled) { transform: scale(1.08); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .next-step {
+            margin-top: 12px; padding: 10px 14px; background: rgba(0,120,212,0.08);
+            border-radius: 10px; border-left: 3px solid var(--primary-blue);
+        }
+        .next-step p { font-size: 12.5px; color: var(--primary-dark); font-weight: 500; }
+        .menu-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px;
+        }
+        .menu-item {
+            padding: 12px; background: white; border-radius: 10px;
+            cursor: pointer; transition: all 0.2s; border: 1px solid var(--border-color);
+            font-size: 12.5px; text-align: left; font-family: inherit;
+        }
+        .menu-item:hover { background: var(--secondary-blue); border-color: var(--primary-blue); }
+        .menu-item .menu-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+        .menu-item .menu-label { font-weight: 500; color: var(--text-primary); }
+        .menu-item .menu-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .chat-container { height: 96vh; border-radius: 16px; max-width: 100%; }
+            .chat-header { padding: 12px 14px; }
+            .header-info h1 { font-size: 14px; }
+            .chat-messages { padding: 14px; }
+            .message-content { max-width: 85%; padding: 10px 13px; font-size: 13px; }
+            .chat-input-area { padding: 10px 14px; }
+            .menu-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <div class="bot-avatar">🎓</div>
+            <div class="header-info">
+                <h1>Куратор группы</h1>
+                <p><span class="status-dot"></span> Магистратура · Управление в образовании</p>
+            </div>
+        </header>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon">🎓</div>
+                <h2 class="welcome-title">Здравствуйте!</h2>
+                <div class="welcome-profile">РГПУ им. А.И. Герцена · Управление в образовании</div>
+                <p class="welcome-subtitle">
+                    Я — виртуальный помощник куратора академической группы. Задайте вопрос по расписанию, практике, документам и административным вопросам.
+                </p>
+                <p style="margin-top: 18px; font-size: 14px; color: var(--text-primary); font-weight: 500;">
+                    Какой у вас курс?
+                </p>
+                <div class="course-selector">
+                    <button class="course-btn" onclick="selectCourse(1)">1 курс</button>
+                    <button class="course-btn" onclick="selectCourse(2)">2 курс</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <div class="input-container">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="Введите вопрос..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                </div>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                    <span>➤</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function courseLabel() { return 'ом_УвО 25/25'; }
+        function groupLabel() { return `${selectedCourse}${courseLabel()}`; }
+
+        let selectedCourse = 1;
+
+        const KNOWLEDGE = {
+            'приветствие': {
+                keywords: ['привет', 'здравств', 'добр.*день', 'добр.*утр', 'добр.*вечер', 'хай', 'hello', 'добрый'],
+                reply: function() {
+                    return `👋 Здравствуйте! Я — виртуальный помощник куратора группы направления <strong>«Управление в образовании»</strong> РГПУ им. А.И. Герцена.<br><br>
+<strong>Группа:</strong> ${groupLabel()}<br><br>
+📌 <strong>Чем могу помочь:</strong><br>
+<div class="menu-grid">
+<button class="menu-item" onclick="quickSend('Расписание занятий')"><span class="menu-icon">📅</span><span class="menu-label">Расписание</span><span class="menu-desc">Занятия, преподаватели, аудитории</span></button>
+<button class="menu-item" onclick="quickSend('Какие документы нужны для практики')"><span class="menu-icon">📄</span><span class="menu-label">Практика</span><span class="menu-desc">Документы, оформление, сроки</span></button>
+<button class="menu-item" onclick="quickSend('Контакты деканата')"><span class="menu-icon">🏛️</span><span class="menu-label">Деканат</span><span class="menu-desc">Адрес, телефон, приёмные часы</span></button>
+<button class="menu-item" onclick="quickSend('Сессия и экзамены')"><span class="menu-icon">🎓</span><span class="menu-label">Учёба</span><span class="menu-desc">Сессия, справки, стипендии</span></button>
+<button class="menu-item" onclick="quickSend('Контакты куратора')"><span class="menu-icon">👥</span><span class="menu-label">Контакты</span><span class="menu-desc">Куратор группы, техподдержка</span></button>
+<button class="menu-item" onclick="quickSend('Как задать вопрос куратору')"><span class="menu-icon">❓</span><span class="menu-label">Задать вопрос</span><span class="menu-desc">Как правильно написать</span></button>
+</div>`;
+                }
+            },
+            'расписание': {
+                keywords: ['расписан', 'график', 'когда.*занят', 'пара', 'уроки', 'занятия', 'лекци', 'семинар', 'где.*пара', 'аудитор', 'корпус', 'черняховск', 'преподаватель.*ведет', 'кто.*ведет', 'изменилось.*расписан', 'где.*наход.*корпус'],
+                reply: function() {
+                    return `📅 <strong>Расписание занятий</strong><br><br>
+<strong>Институт:</strong> Экономики и управления<br>
+<strong>Направление:</strong> 44.04.01 Педагогическое образование<br>
+<strong>Профиль:</strong> Управление в образовании<br>
+<strong>Квалификация:</strong> Магистр<br>
+<strong>Курс:</strong> ${selectedCourse}, Группа: ${groupLabel()}<br>
+<strong>Форма обучения:</strong> Очная<br><br>
+🔗 <strong>Официальный источник:</strong><br>
+<a href="https://guide.herzen.spb.ru/schedule/23089/classes" target="_blank">https://guide.herzen.spb.ru/schedule/23089/classes</a><br><br>
+📌 <strong>Расписание содержит:</strong><br>
+• Дни недели и время занятий (формат: 16:50–18:20)<br>
+• Название дисциплины и тип занятия (лекция/практика/семинар)<br>
+• ФИО преподавателя и его должность/учёная степень<br>
+• Аудитория и корпус (например: ауд. 208, корп. 40, ул. Черняховского д. 2)<br>
+• Период проведения занятий (например: 16.02–02.03)<br><br>
+⚠️ Расписание может обновляться. Всегда проверяйте актуальную версию на сайте.<br><br>
+<div class="next-step"><p>💡 Нужно помочь найти конкретного преподавателя или аудиторию?</p></div>`;
+                }
+            },
+            'практика_документы': {
+                keywords: ['какие.*документ.*практик', 'какой.*документ.*практик', 'список.*документ.*практик', 'что.*нужн.*практик', 'обязательн.*пакет', 'документ.*оформлен', 'практика.*документ'],
+                reply: `✅ <strong>Документы для оформления практики</strong><br><br>
+Обязательный пакет документов:<br><br>
+1️⃣ <strong>Договор</strong> о практической подготовке + дополнительное соглашение (в 2-х экземплярах)<br>
+2️⃣ <strong>Приказ</strong> о направлении обучающихся на практику<br>
+3️⃣ <strong>Задание</strong> на практику в соответствии с рабочей программой дисциплины<br>
+4️⃣ <strong>Отчёт</strong> студента о прохождении практической подготовки<br><br>
+📎 Шаблоны документов доступны по запросу — напишите «Скачать шаблоны».<br><br>
+<div class="next-step"><p>💡 Нужна помощь с оформлением? Спросите «Как распечатать договор»</p></div>`
+            },
+            'практика_организация': {
+                keywords: ['где.*практик', 'какая.*организ', 'профильн.*организ', 'образовательн.*организ', 'куда.*практик', 'место.*практик', 'коммерческ', 'фирм', 'школа', 'дет.*сад', 'колледж', 'вуз.*практик'],
+                reply: `🏢 <strong>Где проходить практику</strong><br><br>
+📌 <strong>Направление 44.00.00 «Педагогическое образование»</strong> (наш профиль)<br>
+→ Практика проходит <strong>ТОЛЬКО в образовательных организациях</strong> (школы, детские сады, колледжи, вузы и т.п.)<br><br>
+📌 <strong>Другие направления подготовки</strong><br>
+→ Практика в профильных организациях по специальности<br><br>
+📌 <strong>Иностранные студенты</strong><br>
+→ Практика в профильных организациях ИЛИ в РГПУ им. А.И. Герцена<br><br>
+❌ Коммерческие фирмы — не подходят для направления «Педагогическое образование».<br><br>
+<div class="next-step"><p>💡 Уточните ваше направление — помогу сориентироваться!</p></div>`
+            },
+            'договор_печать': {
+                keywords: ['печать.*договор', 'сколько.*экземпляр', 'распечат', 'экземпляр.*договор', 'двух.*страниц', 'лист', 'отдельн', 'двусторонн', 'а4', 'как.*правильн.*распечат', 'односторонн'],
+                reply: `🖨️ <strong>Требования к печати договора</strong><br><br>
+⚠️ <strong>КРИТИЧНО ВАЖНО:</strong><br><br>
+• Договор и доп. соглашение печатаются <strong>в 2-х экземплярах</strong><br>
+• Каждая страница — на <strong>отдельном листе А4</strong> (односторонняя печать)<br>
+• ❌ <strong>ЗАПРЕЩЕНО:</strong> печать двух страниц на одном листе (двусторонняя или 2-в-1)<br><br>
+⚠️ Такой договор <strong>НЕ ПРИМЕТ!</strong> Обязательно по 1 странице на лист.<br><br>
+<div class="next-step"><p>💡 Как организация должна подписывать договор? Спросите «Подписание договора»</p></div>`
+            },
+            'договор_подписание': {
+                keywords: ['подписан.*договор', 'образец', 'организ.*подписыва', 'пустой.*образец', 'соглашается.*форм', 'подписан.*организ', 'пометк', 'кажд.*страниц.*подпис'],
+                reply: `✍️ <strong>Подписание договора профильной организацией</strong><br><br>
+📌 Организация подписывает <strong>ВСЕ страницы</strong> договора и всех приложений.<br><br>
+📌 На каждой странице ставится пометка:<br>
+<strong>«ОБРАЗЕЦ»</strong><br><br>
+📌 Подписывая пустой «ОБРАЗЕЦ», организация подтверждает согласие с формой договора.<br><br>
+📌 Заполненные приложения к договору прилагаются к дополнительному соглашению.<br><br>
+<div class="next-step"><p>💡 Подписи в приложениях? Спросите «Приложения к договору»</p></div>`
+            },
+            'договор_приложения': {
+                keywords: ['приложен.*договор', 'приложен.*1', 'приложен.*2', 'подпись.*приложен', 'согласован', 'линия.*согласован', 'под.*линией'],
+                reply: `📎 <strong>Оформление приложений к договору</strong><br><br>
+📌 При подписании приложений необходимо поставить <strong>подпись в Приложениях №1 и №2</strong> под линией согласования!<br><br>
+⚠️ Проверьте наличие всех подписей перед подачей документов.<br><br>
+<div class="next-step"><p>💡 Проверьте сроки сдачи — «Когда сдать договор»</p></div>`
+            },
+            'договор_изменения': {
+                keywords: ['изменен.*договор', 'менять.*договор', 'самостоятел', 'вносить.*изменен', 'формулировк', 'организ.*хочет.*измен', 'пункт.*договор', 'согласуй.*институт', 'изменить.*пункт'],
+                reply: `⚠️ <strong>Внесение изменений в договор</strong><br><br>
+❌ Принимающая организация <strong>НЕ имеет права</strong> самостоятельно менять формулировки договора.<br><br>
+📌 Все формулировки установлены университетом и являются фиксированными.<br><br>
+✅ Если нужны изменения — согласуйте их с институтом <strong>ДО</strong> подписания договора.<br><br>
+<div class="next-step"><p>💡 Нужно согласовать изменения? Спросите «Контакты деканата»</p></div>`
+            },
+            'договор_сроки': {
+                keywords: ['срок.*договор', 'когда.*сдать', 'за.*сколько', 'не.*позднее', '2.*недел', 'две.*недел', 'передать.*институт', 'срок.*подач', 'когда.*подавать', 'до.*практик', 'недопуск', 'сдать.*договор'],
+                reply: `⏰ <strong>Сроки подачи документов на практику</strong><br><br>
+⚠️ <strong>КРИТИЧНО ВАЖНО:</strong><br><br>
+📌 Подписанный договор должен быть передан в институт <strong>НЕ ПОЗДНЕЕ чем за 2 недели</strong> до начала срока реализации практики.<br><br>
+❗ Нарушение срока = <strong>риск недопуска к практике!</strong><br><br>
+Рекомендуем подготовить документы заранее.<br><br>
+<div class="next-step"><p>💡 Кто заполняет шапку документов? Спросите «Кто заполняет шапку»</p></div>`
+            },
+            'договор_шапка': {
+                keywords: ['шапк', 'регистрац.*номер', 'дата.*регистрац', 'вписыва.*шапк', 'номер.*регистрац', 'кто.*заполн.*номер', 'кто.*заполн.*дату', 'дату.*договор'],
+                reply: `📝 <strong>Заполнение шапки документов</strong><br><br>
+📌 Принимающая организация <strong>НЕ вписывает</strong> в шапке документов:<br>
+• Регистрационный номер<br>
+• Дату регистрации<br><br>
+✅ Эти данные заполняет <strong>университет</strong> после получения документов.<br><br>
+❌ После подписания организация <strong>НЕ заполняет</strong> эти поля самостоятельно!<br><br>
+<div class="next-step"><p>💡 Нужны контакты деканата для подачи документов? — «Контакты деканата»</p></div>`
+            },
+            'иностранные': {
+                keywords: ['иностран', 'иностр.*студент', 'foreign', 'международн'],
+                reply: `🌍 <strong>Практика для иностранных студентов</strong><br><br>
+Иностранные студенты могут проходить практику:<br>
+• В <strong>профильных организациях</strong><br>
+• В <strong>университете</strong> (РГПУ им. А.И. Герцена)<br><br>
+📌 Граждане РФ направления 44.00.00 проходят практику <strong>только в образовательных организациях</strong>.`
+            },
+            'деканат_контакты': {
+                keywords: ['деканат', 'контакт', 'обращ', 'телефон', 'почт', 'email', 'куда.*писать', 'куда.*звон', 'помощ', 'адрес.*институт', 'кабинет.*деканат', 'черняховского.*2', '812.*740', 'dekanat_iem'],
+                reply: `🏛️ <strong>Деканат Института экономики и управления</strong><br><br>
+📍 <strong>Адрес:</strong> 191119, г. Санкт-Петербург, ул. Черняховского, д. 2, кабинет 203<br><br>
+📞 <strong>Контакты:</strong><br>
+• Телефон: <strong>8 (812) 740-75-15</strong><br>
+• Email: <a href="mailto:dekanat_iem@herzen.spb.ru">dekanat_iem@herzen.spb.ru</a><br><br>
+🕐 <strong>Приёмные часы:</strong><br>
+• Понедельник – Пятница: <strong>9:00 – 17:45</strong><br>
+• Обед: <strong>13:00 – 13:45</strong><br>
+• Суббота, Воскресенье: выходные<br><br>
+💬 <strong>Как связаться:</strong><br>
+• 📩 Официальные обращения — через группу института ВКонтакте<br>
+• 💬 С сотрудниками деканата — через мессенджер <strong>МАХ</strong><br>
+• 📧 По общим вопросам — email: <a href="mailto:dekanat_iem@herzen.spb.ru">dekanat_iem@herzen.spb.ru</a><br>
+&nbsp;&nbsp;📝 В теме письма: <strong>[Группа] [ФИО] [Суть вопроса]</strong><br><br>
+⚠️ Перед визитом уточните по телефону, нужен ли предварительный звонок.<br>
+В период сессии и практики нагрузка увеличивается — закладывайте время на ответ.<br><br>
+<div class="next-step"><p>💡 Как записаться на приём? Позвоните 8 (812) 740-75-15</p></div>`
+            },
+            'деканат_запись': {
+                keywords: ['запис.*приём', 'запис.*деканат', 'как.*записаться', 'напис.*деканат', 'скан.*документ', 'отправ.*скан', 'справк.*выписк', 'получ.*справк', 'напис.*мессенджер', 'мах.*мессенджер'],
+                reply: `📋 <strong>Частые вопросы по деканату</strong><br><br>
+🔹 <strong>Как записаться на приём?</strong><br>
+✅ Напишите в группу ВК института или позвоните <strong>8 (812) 740-75-15</strong>.<br><br>
+🔹 <strong>Куда отправить скан документа?</strong><br>
+✅ На <a href="mailto:dekanat_iem@herzen.spb.ru">dekanat_iem@herzen.spb.ru</a> с темой: <strong>[Группа] [ФИО] [Суть]</strong>.<br><br>
+🔹 <strong>Где получить справку/выписку?</strong><br>
+✅ Обратитесь в каб. 203 в приёмные часы или уточните в ВК-группе.<br><br>
+🔹 <strong>Можно ли написать в деканат в мессенджере?</strong><br>
+✅ Да, сотрудники доступны в мессенджере <strong>МАХ</strong>.`
+            },
+            'учебный_процесс': {
+                keywords: ['учебн.*процесс', 'сессия', 'экзамен', 'зачёт', 'стипенд', 'соц.*поддержк', 'академ.*справк', 'положен', 'регламент', 'пересдач', 'академ.*отпуск', 'отчислен'],
+                reply: `🎓 <strong>Учебный процесс</strong><br><br>
+📌 <strong>Сессия и экзамены:</strong><br>
+• Осенняя сессия: декабрь – январь<br>
+• Весенняя сессия: май – июнь<br>
+• Точные даты — в расписании на <a href="https://guide.herzen.spb.ru/schedule/23089/classes" target="_blank">guide.herzen.spb.ru</a><br><br>
+📌 <strong>Стипендии и соцподдержка:</strong><br>
+• Вопросы по стипендиям — в деканат (каб. 203)<br>
+• Материальная помощь — через профком<br><br>
+📌 <strong>Академические справки:</strong><br>
+• Обратитесь в деканат в приёмные часы<br>
+• Ул. Черняховского, д. 2, каб. 203<br><br>
+📌 <strong>Положения и регламенты:</strong><br>
+• ЭИОС (электронная информационно-образовательная среда)<br>
+• Сайт университета: <a href="https://herzen.spb.ru" target="_blank">herzen.spb.ru</a><br><br>
+⚠️ В период сессии нагрузка на деканат увеличивается — закладывайте время на ответ.`
+            },
+            'контакты_куратор': {
+                keywords: ['куратор.*групп', 'фио.*куратор', 'контакт.*куратор', 'напис.*куратор', 'куратор.*email', 'тех.*поддержк', 'бот.*ошибк', 'помощ.*бот'],
+                reply: `👥 <strong>Контакты и обратная связь</strong><br><br>
+👨‍🏫 <strong>Куратор группы:</strong><br>
+• ФИО куратора — уточняйте у старосты или в деканате<br>
+• 📧 Email — уточняйте у куратора<br>
+• 🕐 Консультации — по согласованию с куратором<br><br>
+📢 <strong>Как задать вопрос:</strong><br>
+1. Опишите вопрос кратко и по сути<br>
+2. Укажите группу и ФИО (для персональных вопросов)<br>
+3. При необходимости прикрепите скан/фото документа<br>
+4. Ожидайте ответ в рабочее время<br><br>
+⏱️ <strong>Время ответа:</strong><br>
+• Простые вопросы из базы знаний — <strong>мгновенно</strong><br>
+• Вопросы куратору — в течение <strong>1 рабочего дня</strong><br>
+• Сложные запросы — до <strong>3 рабочих дней</strong>`
+            },
+            'как_задать_вопрос': {
+                keywords: ['как.*задать.*вопрос', 'как.*написать', 'как.*обратит', 'правила.*обращен', 'тема.*письма', 'формат.*обращен'],
+                reply: `📝 <strong>Как правильно задать вопрос</strong><br><br>
+📌 <strong>При обращении в деканат по email:</strong><br>
+• Email: <a href="mailto:dekanat_iem@herzen.spb.ru">dekanat_iem@herzen.spb.ru</a><br>
+• В теме письма: <strong>[Группа] [ФИО] [Суть вопроса]</strong><br>
+• Пример: «${groupLabel()} Иванов И.И. — Вопрос по справке»<br><br>
+📌 <strong>При обращении к куратору:</strong><br>
+1. Опишите вопрос кратко и по сути<br>
+2. Укажите группу и ФИО<br>
+3. При необходимости — скан/фото документа<br><br>
+⚠️ Бот не даёт ответов по юридическим, финансовым вопросам, изменениям в учебных планах и персональным данным.`
+            },
+            'спасибо': {
+                keywords: ['спасиб', 'благодар', 'ок', 'понятн', 'ясн', 'отличн', 'супер', 'класс', 'хорош'],
+                reply: `😊 Рад помочь! Если появятся ещё вопросы — пишите в любой момент. Успехов в учёбе! 🎓`
+            },
+            'профиль': {
+                keywords: ['профиль', 'управлен.*образован', 'направлен', 'специальност', 'магистратур', '44\.04', 'институт', 'экономики', 'квалификац'],
+                reply: function() {
+                    return `🎓 <strong>Профиль подготовки</strong><br><br>
+<strong>Институт:</strong> Экономики и управления<br>
+<strong>Направление:</strong> 44.04.01 — Педагогическое образование<br>
+<strong>Профиль:</strong> Управление в образовании<br>
+<strong>Квалификация:</strong> Магистр<br>
+<strong>Курс:</strong> ${selectedCourse}, Группа: ${groupLabel()}<br>
+<strong>Форма обучения:</strong> Очная<br><br>
+📌 Студенты данного направления проходят практику <strong>только в образовательных организациях</strong>.`;
+                }
+            },
+            'скачать_шаблоны': {
+                keywords: ['скач.*шаблон', 'шаблон.*документ', 'бланк', 'форма.*договор', 'образец.*договор'],
+                reply: `📎 <strong>Шаблоны документов для практики</strong><br><br>
+Для получения шаблонов обратитесь:<br>
+• К куратору группы<br>
+• В деканат (каб. 203, ул. Черняховского, д. 2)<br>
+• На email: <a href="mailto:dekanat_iem@herzen.spb.ru">dekanat_iem@herzen.spb.ru</a><br><br>
+📌 В теме письма: <strong>[Группа] [ФИО] — Запрос шаблонов для практики</strong>`
+            },
+            'по_умолчанию': {
+                keywords: [],
+                reply: `🎓 Этот вопрос требует уточнения у куратора или сотрудников деканата.<br><br>
+📌 <strong>Варианты:</strong><br>
+• <strong>Написать куратору</strong> — через мессенджер или email<br>
+• <strong>Обратиться в деканат</strong> — каб. 203, ул. Черняховского, д. 2<br>
+&nbsp;&nbsp;📞 8 (812) 740-75-15<br>
+&nbsp;&nbsp;📧 <a href="mailto:dekanat_iem@herzen.spb.ru">dekanat_iem@herzen.spb.ru</a><br>
+• <strong>Проверить официальные источники</strong> — <a href="https://guide.herzen.spb.ru/schedule/23089/classes" target="_blank">guide.herzen.spb.ru</a><br><br>
+⚠️ Я не даю предположительных ответов по юридическим и финансовым вопросам.`
+            }
+        };
+
+        let isTyping = false;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('chatInput').focus();
+        });
+
+        function selectCourse(course) {
+            selectedCourse = course;
+            const welcome = document.getElementById('welcomeScreen');
+            if (welcome) welcome.style.display = 'none';
+
+            const welcomeMsg = `👋 Добро пожаловать! Вы выбрали <strong>${course} курс</strong> магистратуры.<br><br>
+<strong>Институт:</strong> Экономики и управления<br>
+<strong>Направление:</strong> 44.04.01 Педагогическое образование<br>
+<strong>Профиль:</strong> Управление в образовании<br>
+<strong>Группа:</strong> ${groupLabel()}<br><br>
+<div class="menu-grid">
+<button class="menu-item" onclick="quickSend('Расписание занятий')"><span class="menu-icon">📅</span><span class="menu-label">Расписание</span><span class="menu-desc">Занятия, преподаватели</span></button>
+<button class="menu-item" onclick="quickSend('Какие документы нужны для практики')"><span class="menu-icon">📄</span><span class="menu-label">Практика</span><span class="menu-desc">Документы и оформление</span></button>
+<button class="menu-item" onclick="quickSend('Контакты деканата')"><span class="menu-icon">🏛️</span><span class="menu-label">Деканат</span><span class="menu-desc">Адрес, телефон, часы</span></button>
+<button class="menu-item" onclick="quickSend('Сессия и экзамены')"><span class="menu-icon">🎓</span><span class="menu-label">Учёба</span><span class="menu-desc">Сессия, справки</span></button>
+</div><br>
+Задайте вопрос или выберите тему выше!`;
+            addMessage(welcomeMsg, 'bot');
+        }
+
+        function quickSend(text) {
+            document.getElementById('chatInput').value = text;
+            sendMessage();
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message || isTyping) return;
+            const welcome = document.getElementById('welcomeScreen');
+            if (welcome) welcome.style.display = 'none';
+            addMessage(message, 'user');
+            input.value = '';
+            autoResize(input);
+            showTyping();
+            await new Promise(r => setTimeout(r, 400 + Math.random() * 600));
+            hideTyping();
+            const response = generateResponse(message);
+            addMessage(response, 'bot');
+        }
+
+        function generateResponse(message) {
+            const lower = message.toLowerCase();
+            for (const [key, entry] of Object.entries(KNOWLEDGE)) {
+                if (key === 'по_умолчанию' || key === 'приветствие' || key === 'спасибо') continue;
+                const keywords = entry.keywords || [];
+                if (keywords.some(kw => lower.match(new RegExp(kw, 'i')))) {
+                    return typeof entry.reply === 'function' ? entry.reply() : entry.reply;
+                }
+            }
+            if (lower.match(/^(привет|здравствуй|добр|хай|hello)/i)) {
+                return typeof KNOWLEDGE['приветствие']?.reply === 'function' ? KNOWLEDGE['приветствие'].reply() : KNOWLEDGE['приветствие']?.reply || '';
+            }
+            if (lower.match(/(спасибо|благодар|ок|понятно|ясно|отлично|супер)/i)) {
+                return KNOWLEDGE['спасибо']?.reply || '';
+            }
+            if (lower.match(/практик/i) && !lower.match(/документ|печать|договор|срок|коммерч|шаблон|иностран/i)) {
+                return `📄 <strong>Практическая подготовка</strong><br><br>Выберите тему:<br><br>
+• <strong>«Какие документы нужны для практики»</strong> — обязательный пакет<br>
+• <strong>«Можно ли пройти практику в коммерческой фирме»</strong> — где проходить<br>
+• <strong>«Как правильно распечатать договор»</strong> — требования к оформлению<br>
+• <strong>«Когда нужно сдать подписанный договор»</strong> — сроки и недопуск<br>
+• <strong>«Организация хочет изменить пункт договора»</strong> — можно ли менять<br>
+• <strong>«Кто заполняет номер и дату договора»</strong> — кто заполняет шапку<br><br>
+<div class="next-step"><p>💡 Напишите интересующую тему — и я дам развёрнутый ответ!</p></div>`;
+            }
+            return KNOWLEDGE['по_умолчанию']?.reply || '🎓 Этот вопрос требует уточнения у куратора или сотрудников деканата.';
+        }
+
+        function addMessage(text, type) {
+            const container = document.getElementById('chatMessages');
+            const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const avatar = type === 'bot' ? '🎓' : '👤';
+            const msg = document.createElement('div');
+            msg.className = `message ${type}`;
+            msg.innerHTML = `<div class="message-avatar">${avatar}</div><div><div class="message-content">${text}</div><div class="message-time">${time}</div></div>`;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            isTyping = true;
+            const container = document.getElementById('chatMessages');
+            const typing = document.createElement('div');
+            typing.className = 'message bot';
+            typing.id = 'typingIndicator';
+            typing.innerHTML = `<div class="message-avatar">🎓</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+            container.appendChild(typing);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function hideTyping() {
+            isTyping = false;
+            const typing = document.getElementById('typingIndicator');
+            if (typing) typing.remove();
+        }
+
+        window.quickSend = quickSend;
+        window.selectCourse = selectCourse;
+    </script>
+</body>
+</html>
+
